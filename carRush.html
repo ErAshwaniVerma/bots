@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<script type="text/javascript" src="jquery.js"></script>
+<title>Car Rush</title>
+<?php
+	include "style.php";
+	?>
+<style type="text/css">
+	body{
+		background: #333;
+	}
+	canvas{
+		background: #012;
+		border:2px solid #fff;
+		position: fixed;
+		left: 0;
+		top:60px;
+		right:0;
+		margin: auto;
+	}
+	#gm_button_zone{
+			width:200px;
+			height: 200px;
+			position: fixed;
+			background: transparent;
+			border:1px solid #046;
+			opacity: 1;
+			bottom:-230px;
+			right:0;
+			left:0;
+			margin-right: auto;
+			margin-left: auto;
+			border-radius: 50%;
+			overflow:hidden ;
+			opacity: 0.3;
+		}
+		.gm_control_btn{
+			border:2px solid #046;
+		}
+		.mv_up{
+			width:100px;
+			height:100px;
+			background: transparent;
+			position: absolute;
+			top:-30px;
+			right:0;
+			left: 0;
+			margin-right: auto;
+			margin-left: auto;
+			transform: rotateZ(45deg);
+		}
+		.mv_down{
+			width:100px;
+			height:100px;
+			background: transparent;
+			position: absolute;
+			bottom:-30px;
+			right:0;
+			left: 0;
+			margin-right: auto;
+			margin-left: auto;
+			transform: rotateZ(45deg);
+		}
+		.mv_left{
+			width:100px;
+			height:100px;
+			position: absolute;
+			background: transparent;
+			bottom:0;
+			top:0;
+			left: -30px;
+			transform: rotateZ(45deg);
+			margin-top: auto;
+			margin-bottom: auto;
+		}
+		.mv_right{
+			width:100px;
+			height:100px;
+			background: transparent;
+			position: absolute;
+			bottom:0;
+			top:0;
+			right: -30px;
+			transform: rotateZ(45deg);
+			margin-top: auto;
+			margin-bottom: auto;
+		}
+		.mv_up:after{
+			content: '';
+			border:15px solid transparent;
+			border-top-color:#045;
+			border-left-color:#045;
+			position: absolute;
+			bottom:20px;
+			right:20px;
+		}
+		.mv_right:after{
+			content: '';
+			border:15px solid transparent;
+			border-top-color:#045;
+			border-right-color:#045;
+			position: absolute;
+			bottom:20px;
+			left:20px;
+		}
+		.mv_down:after{
+			content: '';
+			border:15px solid transparent;
+			border-bottom-color:#045;
+			border-right-color:#045;
+			position: absolute;
+			top:20px;
+			left:20px;
+		}
+		.mv_left:after{
+			content: '';
+			border:15px solid transparent;
+			border-bottom-color:#045;
+			border-left-color:#045;
+			position: absolute;
+			top:20px;
+			right:20px;
+		}
+		.container{
+			position: fixed;
+			width: 302px;
+			height: 350px;
+			background: #012;
+			border:1px solid #fff;
+			left: 0;
+			right: 0;
+			margin: auto;
+		}
+		.gm_over{
+			width: 210px;
+			height: 210px;
+			background: #ff0045;
+			color:#fff;
+			position: fixed;
+			top:0;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			margin: auto;
+			text-align: center;
+			font-size: 15px;
+			display: ;
+			z-index:99;
+		}
+		.gm_over_btn,.demo_ignore{
+			background: orange;
+			padding: 10px;
+			width:60%;
+			margin: auto;
+			cursor: pointer;
+		}
+		.demo{
+			width: 210px;
+			height: 220px;
+			background: #ff0045;
+			color:#fff;
+			position: fixed;
+			top:0;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			margin: auto;
+			text-align: center;
+			font-size: 15px;
+			display: ;
+			z-index:99;
+		}
+</style>
+</head>
+<body onload="startGm();">
+<?php
+	include "navbar.php";
+?>
+<div class="gm_over">
+	<h2>Game Over</h2>
+	Total score :
+	<h1 style='font-size:;' id="gm_over_score">N/A</h1>
+	</span>
+	<div class='gm_over_btn' onclick="reset_game()">Restart</div>
+</div>
+<div class="demo">
+	<p style="margin: 20px;">To control the car tap the direction keys. On every tap the speed of car increases on that direction to reduce the speed just tap on the opposite direciton key.
+	<div class='demo_ignore' style="background: #fff; color:#012;" onclick="startGm();">Play</div>
+</div>
+<div id="gm_button_zone">
+	<div class="gm_control_btn mv_up" onclick="mv_player('up')"></div>
+	<div class="gm_control_btn mv_left" onclick="mv_player('left')"></div>
+	<div class="gm_control_btn mv_down" onclick="mv_player('down')"></div>
+	<div class="gm_control_btn mv_right" onclick="mv_player('right')"></div>
+</div>
+<script type="text/javascript">
+var player;		
+var	wall = [];
+var	road_strips = [];
+var score;
+window.onload = function(){
+	document.querySelector(".demo").style.display = "block";
+}
+function reset_game(){
+	gameField.clear();
+	wall = [];
+	startGm();
+}
+function startGm(){
+	document.querySelector(".demo").style.display = "none";
+	document.querySelector(".gm_over").style.display = "none";
+	$("#gm_button_zone").animate({'bottom':'30px'},'slow');
+	setTimeout(function(){
+		player = new sprite(35,70,'red',140,200,"");	
+		score = new sprite("20px", "arial" ,"white", 5, 20, "text");
+		gameField.start();
+	},200);
+}
+
+
+var gameField = {
+	canvas : document.createElement("canvas"),
+	start : function() {
+		this.canvas.width = 300;
+		this.canvas.height = 350;
+		this.context = this.canvas.getContext("2d");
+		document.body.insertBefore(this.canvas, document.body.childNodes[0]);
+		this.frameNo = 0;
+		this.interval = setInterval(updateGameField, 5);
+		},
+	clear : function() {
+		this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+	},
+	stop :function(){
+		clearInterval(this.interval);
+	}
+}
+
+function sprite(width, height, color, posX, posY, type){
+	this.type = type;
+	if (type == "image") {
+        this.image = new Image();
+        this.image.src = color;
+    }
+	this.width = width;
+	this.height = height;
+	this.speedX = 0;
+	this.speedY = 0;
+	this.x = posX;
+	this.y = posY;
+	this.update = function() {
+		ctx = gameField.context;
+		if(this.type == "text"){
+			ctx.font = this.width + " " +this.height;
+			ctx.fillStyle = color;
+			ctx.fillText(this.text, this.x, this.y);
+		}else if(this.type == "image"){
+			ctx.drawImage(this.image,
+				this.x,
+				this.y,
+				this.width, this.height);
+		}else{
+			ctx.fillStyle = color;
+			ctx.fillRect(this.x, this.y, this.width, this.height);
+		}
+	}
+	this.newPos = function() {
+		if(this.x > gameField.canvas.width-50){
+			this.x--; 
+			this.speedX = 0;
+		}
+		if(this.x < 10){
+			this.x++;
+			this.speedX = 0;
+		}
+		if(this.y > gameField.canvas.height-80){
+			this.y--; 
+			this.speedY = 0;
+		}
+		if(this.y < 10){
+			this.y++;
+			this.speedY = 0;
+		}
+		this.x += this.speedX;	
+		this.y += this.speedY;
+	}
+	this.crashWith = function(otherobj) {
+	    var myleft = this.x;
+	    var myright = this.x + (this.width);
+	    var mytop = this.y;
+	    var mybottom = this.y + (this.height);
+	    var otherleft = otherobj.x;
+	    var otherright = otherobj.x + (otherobj.width);
+	    var othertop = otherobj.y;
+	    var otherbottom = otherobj.y + (otherobj.height);
+	    var crash = true;
+
+	    if ((mybottom < othertop) || (mytop > otherbottom) || (myright < otherleft) || (myleft > otherright)) {
+	      	crash = false;
+	    }
+	    return crash;
+	}
+}
+
+function updateGameField() {
+	var x, height, gap, minHeight, maxHeight, minGap, maxGap ;
+	for (i = 0; i < wall.length; i += 1) {
+		if (player.crashWith(wall[i])) {
+			gameField.stop();
+			document.getElementById("gm_over_score").innerHTML = gameField.frameNo;
+			document.querySelector(".gm_over").style.display = "block";
+			return;
+		}
+	}
+	gameField.clear();
+	gameField.frameNo += 1;
+	var tim_gap = [300,500,600,550,800,1000,700];
+	var car_sprites = ['cars/car_1.png','cars/car_6.png','cars/car_3.png','cars/car_4.png','cars/car_5.png'];
+	if (gameField.frameNo == 1 || everyinterval(30)) {
+		x = gameField.canvas.width;
+		y = gameField.canvas.height;
+		minGap = 50;
+	    maxGap = 200;
+		road_strips.push(new sprite(10, 50, "white", 150,-50));
+	}
+	for(i = 0; i < road_strips.length; i++){
+		road_strips[i].y += 4;
+		road_strips[i].update();
+	}
+	if (gameField.frameNo == 1 || everyinterval(tim_gap[Math.floor(Math.random() * tim_gap.length)])) {
+		x = gameField.canvas.width;
+		y = gameField.canvas.height;
+		minGap = 50;
+	    maxGap = 200;
+		wall.push(new sprite(35,70, car_sprites[Math.floor(Math.random() * car_sprites.length)], Math.floor(Math.random() * (260-160)+1) + 160,-90,"image"));
+	}
+	if (gameField.frameNo == 1 || everyinterval(tim_gap[Math.floor(Math.random() * tim_gap.length)])) {
+		x = gameField.canvas.width;
+		y = gameField.canvas.height;
+		minGap = 50;
+	    maxGap = 200;
+		wall.push(new sprite(35, 70, car_sprites[Math.floor(Math.random() * car_sprites.length)], Math.floor(Math.random()* (110 - 10)+1)+10,-90,"image"));
+	}
+	for (i = 0; i < wall.length; i += 1) {
+		wall[i].y += 1;
+		wall[i].update();
+	}
+	score.text = "Score : " + gameField.frameNo;
+	score.update();
+	player.newPos();
+	player.update();
+}
+
+function everyinterval(n){
+	if((gameField.frameNo / n) % 1 == 0){
+		return true;
+	}
+	return false;
+}
+
+document.onkeydown = check_key;
+	function check_key(e){
+		e = e || window.event;
+		if(e.keyCode == "38"){
+			mv_player("up");
+		}else if(e.keyCode == "40"){
+			mv_player("down");
+		}else if(e.keyCode == "37"){
+			mv_player("left");
+		}else if(e.keyCode == "39"){
+			mv_player("right");
+		}else if(e.keyCode == "13"){
+			reset_game();
+		}
+	}
+
+function mv_player(direction){
+	if(direction == "up"){
+	 	player.speedY += -.5;
+	 	player.speedX = 0;
+	}else if(direction == "down"){
+		player.speedY += .5;
+		player.speedX = 0;
+	}else if(direction == "right"){
+		player.speedX += .5;
+		player.speedY = 0;
+	}else if(direction == "left"){
+		player.speedX += -.5;
+		player.speedY = 0;
+	}
+}
+</script>
+<?php
+	include "functions.php";
+?>
+</body>
+</html>

@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<title>Bounce Ball</title>
+	<meta name="viewport" content="width=device-width,initial-scale=1">
+	<script type="text/javascript" src="jquery.js"></script>
+	<style type="text/css">
+		body {
+			font-family: arial;
+		}
+
+		.container {
+			width: 500px;
+			height: 400px;
+			background: #ddd;
+			border: 5px solid #222;
+			border-radius: 5px;
+			position: relative;
+			margin: auto;
+			overflow: hidden;
+			box-shadow: 30px 35px 30px rgba(0,0,0,0.2),
+						inset -5px -5px 10px rgba(255,255,255,1),
+						inset 5px 5px 10px rgba(0,0,0,0.6);
+		}
+
+		.no_selection {
+			-webkit-touch-callout: none;
+			/* iOS Safari */
+			-webkit-user-select: none;
+			/* Safari */
+			-khtml-user-select: none;
+			/* Konqueror HTML */
+			-moz-user-select: none;
+			/* Old versions of Firefox */
+			-ms-user-select: none;
+			/* Internet Explorer/Edge */
+			user-select: none;
+			/* Non-prefixed version, currently
+		                                  supported by Chrome, Edge, Opera and Firefox */
+		}
+
+		.ball {
+			width: 10px;
+			height: 10px;
+			background: red;
+			border:1px solid #222;
+			border-radius: 50%;
+			position: absolute;
+			box-shadow: 3px 4px 5px rgba(0,0,0,0.3),
+						inset 2px 2px 3px rgba(255,255,255,0.8),
+						inset -2px -2px 3px rgba(0,0,0,0.6);
+		}
+
+		.slab {
+			width: 50px;
+			height: 10px;
+			background: dodgerblue;
+			border-radius: 30px;
+			position: absolute;
+			top: 320px;
+			left: 220px;
+			box-shadow: 2px 3px 5px rgba(0,0,0,0.3),
+						inset 2px 2px 3px rgba(255,255,255,0.8),
+						inset -2px -2px 3px rgba(0,0,0,0.6);
+		}
+
+		#indigator_div {
+			position: absolute;
+			border-radius: 50%;
+			transition: all 5s;
+		}
+
+		.button_div {
+			background: #eee;
+			padding: 10px;
+			margin: auto;
+			width: 200px;
+		}
+
+		.button_div button {
+			padding: 20px;
+			font-size: 25px;
+		}
+
+		.range_controller_div {
+			margin: auto;
+			background: transparent;
+		}
+
+		.slab_controller {
+			-webkit-appearance: none;
+			appearance: none;
+			outline: none;
+			width: 100%;
+			height: 20px;
+			margin: auto;
+			background: transparent;
+		}
+
+		.slab_controller::-webkit-slider-thumb {
+			-webkit-appearance: none;
+			appearance: none;
+			width: 50px;
+			height: 50px;
+			cursor: pointer;
+			background: url('arrow_up.png') center no-repeat;
+			filter:drop-shadow(30px 35px 8px rgba(0,0,0,0.1));
+			background-size: cover;
+			border-radius: 50%;
+		}
+
+		.bricks {
+			background: #55cc33;
+			width: 16%;
+			height: 30px;
+			position: absolute;
+			box-shadow: 2px 3px 5px rgba(0,0,0,0.3),
+						inset 2px 2px 3px rgba(255,255,255,0.8),
+						inset -2px -2px 3px rgba(0,0,0,0.6);
+		}
+
+		@media screen and (min-width: 600px) {
+			.container {
+				width: 35%;
+			}
+			.range_controller_div {
+				width: 25%;
+			}
+		}
+
+		@media screen and (max-width: 600px) {
+			.container {
+				width: 95%;
+			}
+			.range_controller_div {
+				width: 95%;
+			}
+		}
+	</style>
+</head>
+
+<body>
+
+	<div class="container" id="container">
+		<div class="ball" id="ball"></div>
+		<div class="slab" id="slab"></div>
+	</div>
+	<br>
+	<div class="range_controller_div">
+		<input type="range" name="slab_controller" min="7" max="93" class="slab_controller" id="slab_controller" value="50" onchange="move_via_range_slider(this.value)"
+		 oninput="move_via_range_slider(this.value)" />
+	</div>
+
+	<script type="text/javascript">
+		var
+
+			container_innerHeight = $("#container").innerHeight(),
+			container_innerWidth = $("#container").innerWidth(),
+			slab_controller = document.getElementById("slab_controller");
+
+
+		slab_Height = $("#slab").height(),
+			slab_Width = $("#slab").width(),
+
+			ballWidth = $("#ball").width(),
+			ballHeight = $("#ball").height(),
+
+			speed = 5,
+
+			ball_x = container_innerWidth / 2 - ballHeight,
+			ball_y = 360 - (slab_Height),
+
+			slab_x = container_innerWidth / 2 - slab_Width / 2,
+			slab_y = 360,
+
+			x_direction = "plus",
+			y_direction = "minus",
+
+			bricks = [];
+			brick_rows = 1;
+			brick_columns = 6;
+
+		check_position_ball_interval = "",
+			move_slab_interval = "",
+			moving_ball_interval = "";
+
+		start_game();
+		creating_bricks();
+		//document.onkeydown = keyDownHandler;
+		//document.onkeyup = keyUpHandler;
+
+		function creating_bricks() {
+			var brick_margin_y = 0;
+			for (var i = 0; i < brick_rows; i++) {
+				var brick_margin_x = 0;
+				for (var j = 0; j < brick_columns; j++) {
+					bricks[j] = [brick_margin_x,brick_margin_y];
+					$(".container").append("<div class='bricks' style='left:" + brick_margin_x + "px;top:" + brick_margin_y + "px;' id='brick" + i + "and" + j + "'>" + i + "," + j);
+					brick_margin_x += Math.floor((17 / 100) * container_innerWidth);
+				}
+				brick_margin_y += Math.floor((8/ 100) * container_innerHeight);
+			}
+			console.log(bricks);
+		}
+
+		function collision_to_brick() {
+
+		}
+
+		document.addEventListener("keydown", keyDownHandler, false);
+		document.addEventListener("keyup", keyUpHandler, false);
+
+		function move_via_range_slider(slide_amount) {
+			if (slab_x > 0 && slab_x < container_innerWidth - slab_Width) {
+				slab_x = (slide_amount / 100) * container_innerWidth - slab_Width / 2;
+				$("#slab").css({ "left": slab_x + "px" });
+			} else if (slab_x <= 0) {
+				slab_x = 1;
+				$("#slab").css({ "left": slab_x + "px" });
+			} else if (slab_x >= container_innerWidth - slab_Width) {
+				slab_x = (container_innerWidth - slab_Width) - 1;
+				$("#slab").css({ "left": slab_x + "px" });
+			}
+		}
+		function keyUpHandler(keyup_e) {
+			clearInterval(move_slab_interval);
+		}
+		function keyDownHandler(keydown_e) {
+			keydown_e = keydown_e || window.event;
+
+			if (keydown_e.keyCode == '38') {
+				// up arrow
+			}
+			else if (keydown_e.keyCode == '40') {
+				// down arrow
+			}
+			if (keydown_e.keyCode == '37') {
+				// left arrow
+				clearInterval(move_slab_interval);
+				move_slab_interval = setInterval(function () {
+					move_slab("left");
+				}, 10);
+			}
+			else if (keydown_e.keyCode == '39') {
+				// right arrow
+				clearInterval(move_slab_interval);
+				move_slab_interval = setInterval(function () {
+					move_slab("right");
+				}, 10);
+			}
+
+		}
+
+		function button_control(button_key) {
+			if (button_key == 'left') {
+				// left arrow
+				clearInterval(move_slab_interval);
+				move_slab_interval = setInterval(function () {
+					move_slab("left");
+				}, 10);
+			}
+			else if (button_key == 'right') {
+				// right arrow
+				clearInterval(move_slab_interval);
+				move_slab_interval = setInterval(function () {
+					move_slab("right");
+				}, 10);
+			}
+		}
+		function move_slab(slab_direction) {
+			if (slab_direction == "left" && slab_x >= 0 + 2) {
+				slab_x -= 4;
+			} else if (slab_direction == "right" && slab_x <= container_innerWidth - 52) {
+				slab_x += 4;
+			}
+			$("#slab").css({ "left": slab_x + "px" });
+			$("#slab").css({ "top": slab_y + "px" });
+		}
+
+
+		function create_div(div_x, div_y) {
+			var div = document.createElement("div");
+			div.id = "indigator_div";
+			div.style.width = "10px";
+			div.style.height = "10px";
+			div.style.background = "red";
+			div.style.left = div_x + "px";
+			div.style.top = div_y + "px";
+
+			document.getElementById("container").appendChild(div);
+		}
+		function start_game() {
+			ball_x = container_innerWidth / 2 - ballHeight,
+				ball_y = 360 - (slab_Height),
+
+				slab_x = container_innerWidth / 2 - slab_Width / 2,
+				slab_y = 360,
+
+				$("#ball").css({ "left": ball_x + "px" });
+			$("#ball").css({ "top": ball_y + "px" });
+
+			$("#slab").css({ "left": slab_x + "px" });
+			$("#slab").css({ "top": slab_y + "px" });
+			move_ball();
+			check_position_ball_interval = setInterval(function () {
+				if (ball_x >= container_innerWidth - ballWidth) {
+					x_direction = "minus";
+					//create_div(ball_x+25,ball_y+25);
+				} else if (ball_x <= 0 - 5) {
+					x_direction = "plus";
+					//create_div(ball_x+25,ball_y+25);
+				} else if (ball_y >= container_innerHeight - ballHeight) {
+					//y_direction = "minus";
+					//alert("You Lose...!!");
+					clearInterval(moving_ball_interval);
+					clearInterval(check_position_ball_interval);
+					clearInterval(move_slab_interval);
+					setTimeout(function () {
+						start_game();
+					}, 1000);
+					//create_div(ball_x+25,ball_y+25);
+				} else if (ball_y <= 0 - 5) {
+					y_direction = "plus";
+					//create_div(ball_x+25,ball_y+25);
+				}
+				if (ball_y >= slab_y - (slab_Height) && ball_y <= slab_y + (slab_Height) && ball_x <= slab_x + (slab_Width + 4) && ball_x >= slab_x - (0 + 4)) {
+					y_direction = "minus";
+					$("#slab").css({ "transform": "translateY(5px)" });
+					setTimeout(function () {
+						$("#slab").css({ "transform": "translateY(0px)" });
+					}, 50);
+				}
+
+
+				
+				for (var l = 0; l < bricks.length; l++) {
+					for (var m = 0; m < bricks[l].length; m += 2) {
+						var sec_value = m;
+						var brick_x = bricks[l][m];
+						var brick_y = bricks[l][sec_value];
+						
+						var elm = document.getElementById("brick"+l+"and"+(sec_value));
+						var style_elm = getComputedStyle(elm);
+						var brick_width = style_elm.width;
+						var brick_height = style_elm.height;
+
+						if(ball_y <= brick_y + (30)){
+							y_direction = "plus";
+							document.getElementById("brick"+l+"and"+sec_value).style.opacity = 0.3;
+						}
+					}
+				}
+			}, speed);
+		}
+
+		function move_ball() {
+			moving_ball_interval = setInterval(function () {
+				if (x_direction == "minus") {
+					ball_x -= 1;
+					//create_div(ball_x+25,ball_y+25);
+				}
+				if (x_direction == "plus") {
+					ball_x += 1;
+					//create_div(ball_x+25,ball_y+25);
+				}
+				if (y_direction == "minus") {
+					ball_y -= 1;
+					//create_div(ball_x+25,ball_y+25);
+				}
+				if (y_direction == "plus") {
+					ball_y += 1;
+					//create_div(ball_x+25,ball_y+25);
+				}
+				update_ball_position();
+			}, speed);
+		}
+
+		function update_ball_position() {
+			$("#ball").css({ "left": ball_x + "px" });
+			$("#ball").css({ "top": ball_y + "px" });
+
+			//$("#x_pos").html(ball_x);
+			$("#y_pos").html(ball_y);
+		}
+
+/*
+		document.addEventListener("mousemove", mouseMoveHandler, false);
+
+		function mouseMoveHandler(e) {
+		    var relativeX = e.clientX - container.offsetLeft;
+		    if(relativeX > 0 && relativeX < container_innerWidth) {
+		        slab_x = relativeX - slab_Width;
+		    }
+		    $("#slab").css({"left":slab_x+"px"});
+		    $("#x_pos").html(relativeX);
+		}*/
+	</script>
+</body>
+
+</html>
